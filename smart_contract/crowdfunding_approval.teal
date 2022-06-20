@@ -1,0 +1,190 @@
+#pragma version 5
+txn ApplicationID
+int 0
+==
+bnz main_l14
+txn OnCompletion
+int NoOp
+==
+bnz main_l11
+txn OnCompletion
+int DeleteApplication
+==
+bnz main_l6
+txn OnCompletion
+int OptIn
+==
+txn OnCompletion
+int CloseOut
+==
+||
+txn OnCompletion
+int UpdateApplication
+==
+||
+bnz main_l5
+err
+main_l5:
+int 0
+return
+main_l6:
+byte "end_time"
+app_global_get
+global LatestTimestamp
+<=
+assert
+global CurrentApplicationAddress
+balance
+byte "goal_amount"
+app_global_get
+<
+bnz main_l8
+main_l7:
+itxn_begin
+int pay
+itxn_field TypeEnum
+byte "creator"
+app_global_get
+itxn_field CloseRemainderTo
+itxn_submit
+int 1
+return
+main_l8:
+byte "backers"
+app_global_get
+store 1
+int 0
+store 0
+main_l9:
+load 0
+load 1
+<
+bz main_l7
+itxn_begin
+int pay
+itxn_field TypeEnum
+load 0
+itob
+byte "a"
+concat
+app_global_get
+global MinTxnFee
+-
+itxn_field Amount
+load 0
+itob
+byte "k"
+concat
+app_global_get
+itxn_field Receiver
+itxn_submit
+load 0
+int 1
++
+store 0
+b main_l9
+main_l11:
+txna ApplicationArgs 0
+byte "fund"
+==
+bnz main_l13
+err
+main_l13:
+global LatestTimestamp
+byte "end_time"
+app_global_get
+<
+txn GroupIndex
+int 1
+-
+gtxns TypeEnum
+int pay
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns Sender
+txn Sender
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns Receiver
+global CurrentApplicationAddress
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns Amount
+global MinTxnFee
+>=
+&&
+assert
+byte "backers"
+app_global_get
+byte "a"
+concat
+txn GroupIndex
+int 1
+-
+gtxns Amount
+app_global_put
+byte "backers"
+app_global_get
+byte "k"
+concat
+txn GroupIndex
+int 1
+-
+gtxns Sender
+app_global_put
+byte "backers"
+byte "backers"
+app_global_get
+int 1
++
+app_global_put
+int 1
+return
+main_l14:
+global LatestTimestamp
+txna ApplicationArgs 3
+btoi
+<
+assert
+byte "creator"
+txna ApplicationArgs 0
+app_global_put
+byte "project_name"
+txna ApplicationArgs 1
+app_global_put
+byte "project_desc"
+txna ApplicationArgs 2
+app_global_put
+byte "start_time"
+global LatestTimestamp
+app_global_put
+byte "end_time"
+txna ApplicationArgs 3
+btoi
+app_global_put
+byte "goal_amount"
+txna ApplicationArgs 4
+btoi
+app_global_put
+byte "backers"
+int 0
+app_global_put
+itxn_begin
+int pay
+itxn_field TypeEnum
+int 500000
+itxn_field Amount
+global CurrentApplicationAddress
+itxn_field Receiver
+itxn_submit
+int 1
+return
